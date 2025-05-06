@@ -88,3 +88,5 @@ desktop.ini
 
 # === GIT ===
 *.orig
+src/services/exported_data/
+src/services/cluster_assignments.csv
