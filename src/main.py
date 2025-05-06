@@ -7,7 +7,7 @@ from binance.client import Client
 from services import get_historical_klines
 from dotenv import load_dotenv
 
-DATA_DIR = "data"
+DATA_DIR = "/src/data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 MONGO_URI = os.getenv("MONGO_URI")
