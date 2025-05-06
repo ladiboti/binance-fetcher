@@ -1,0 +1,90 @@
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+*.sqlite3
+*.db
+*.egg-info/
+*.log
+data/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Jupyter Notebook checkpoint
+.ipynb_checkpoints/
+
+# Pip files
+pip-wheel-metadata/
+*.egg
+*.whl
+
+# Flask instance folders
+instance/
+*.bak
+
+# JSON adatmentés (ha nem akarod követni)
+data/*.json
+
+# === NODE / ANGULAR ===
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular environment files
+src/environments/*.ts
+!.gitkeep
+
+# Angular build cache
+.angular/
+.cache/
+
+# === TAILWINDCSS / POSTCSS ===
+.postcssrc
+tailwind.config.js
+tailwind.config.cjs
+tailwind.config.ts
+*.css.map
+
+# === DOTNET / C# ===
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.vs/
+.vscode/
+project.lock.json
+project.fragment.lock.json
+
+# .NET environment files
+appsettings.*.json
+secrets.json
+
+# === DATABASES ===
+*.sql
+*.dump
+*.pgsql
+*.pgpass
+
+# === VSCODE ===
+.vscode/
+.code-workspace
+
+# === OS / EDITOR SPECIFIC ===
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# === GIT ===
+*.orig
