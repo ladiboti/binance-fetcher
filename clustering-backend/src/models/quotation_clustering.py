@@ -36,7 +36,7 @@ def setup_environment():
     logger = setup_logging()
     
     # Load environment variables
-    load_dotenv()
+    load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
     
     # Suppress FutureWarning
     warnings.filterwarnings("ignore", category=FutureWarning)

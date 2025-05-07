@@ -9,27 +9,29 @@ __pycache__/
 *.db
 *.egg-info/
 *.log
-data/
 
-# Virtual environments
+# === Virtual environments ===
 venv/
 env/
 .venv/
 
-# Jupyter Notebook checkpoint
+# === Jupyter Notebook checkpoint ===
 .ipynb_checkpoints/
 
-# Pip files
+# === Pip files ===
 pip-wheel-metadata/
 *.egg
 *.whl
 
-# Flask instance folders
+# === Flask instance folders ===
 instance/
 *.bak
 
-# JSON adatmentés (ha nem akarod követni)
-data/*.json
+# === JSON adatmentés (ha nem akarod követni) ===
+clustering-backend/data/*.json
+clustering-backend/data/
+clustering-backend/src/models/exported_data/
+clustering-backend/src/models/cluster_assignments.csv
 
 # === NODE / ANGULAR ===
 node_modules/
@@ -88,5 +90,3 @@ desktop.ini
 
 # === GIT ===
 *.orig
-src/models/exported_data/
-src/models/cluster_assignments.csv

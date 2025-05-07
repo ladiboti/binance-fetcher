@@ -12,7 +12,7 @@ from src.services import get_historical_klines
 from src.models import run_clustering_pipeline
 
 # Load environment variables
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -57,7 +57,6 @@ trading_pairs = [
     "PEPEUSDT",  # PEPE
     "RNDRUSDT"   # Render Token
 ]
-
 
 # Helper functions
 def clear_directory(directory):
