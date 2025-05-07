@@ -5,8 +5,9 @@ import pymongo
 import logging
 from datetime import datetime, timedelta
 from binance.client import Client
-from services import get_historical_klines
 from dotenv import load_dotenv
+from services import get_historical_klines
+from models import run_clustering_pipeline
 
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -116,3 +117,5 @@ if __name__ == "__main__":
             logger.error(f"Pair not listed on Binance or invalid response for {pair}: {e}")
         except Exception as e:
             logger.error(f"Unexpected error fetching data for {pair}: {e}")
+
+    run_clustering_pipeline()
