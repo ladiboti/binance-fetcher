@@ -11,6 +11,7 @@ import seaborn as sns
 import plotly.express as px
 import plotly.io as pio
 from tqdm import tqdm
+from dotenv import load_dotenv
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import Ridge
@@ -27,18 +28,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+load_dotenv()
+
+# Suppress FutureWarning
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 # Create directories
 EXPORT_DIR = "data"
 CHARTS_DIR = "charts"
 os.makedirs(EXPORT_DIR, exist_ok=True)
 os.makedirs(CHARTS_DIR, exist_ok=True)
 
-# Suppress FutureWarning
-warnings.filterwarnings("ignore", category=FutureWarning)
+# Delete data directory
+logger.info(f"Deleting {EXPORT_DIR}...")
+for filename in os.listdir(EXPORT_DIR):
+    file_path = os.path.join(EXPORT_DIR, filename)
+    try:
+        os.remove(file_path)
+        logger.info(f"Deleted:: {file_path}")
+    except Exception as e:
+        logger.error(f"Unable to delete: {file_path}, error: {e}")
 
 # MongoDB connection
 logger.info("Connecting to MongoDB...")
-MONGO_URI = "mongodb+srv://ladib:nagyon-nehez-jelszo@crypto-data.4gypbde.mongodb.net/?retryWrites=true&w=majority&appName=crypto-data"
+MONGO_URI = os.getenv("MONGO_URI")
 client = pymongo.MongoClient(MONGO_URI)
 db = client["crypto-db"]
 collection = db["klines"]
@@ -127,6 +140,7 @@ logger.info(f"Close price chart saved to {os.path.join(CHARTS_DIR, 'close_price_
 # Calculate volatility and correlation
 logger.info("Calculating volatility and correlation...")
 volatility_df = df_normalized.copy()
+# volatility_df.drop_duplicates(subset=['timestamp', 'symbol'], keep='last', inplace=True)
 volatility_df['price_change'] = volatility_df.groupby('symbol')['close'].pct_change()
 volatility_pivot = volatility_df.pivot(index='timestamp', columns='symbol', values='price_change')
 correlation_matrix = volatility_pivot.corr()

@@ -2,13 +2,22 @@ import os
 import json
 import argparse
 import pymongo
+import logging
 from datetime import datetime, timedelta
 from binance.client import Client
 from services import get_historical_klines
 from dotenv import load_dotenv
 
-DATA_DIR = "/src/data"
+DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
 
 MONGO_URI = os.getenv("MONGO_URI")
 client = pymongo.MongoClient(MONGO_URI)
@@ -39,9 +48,6 @@ trading_pairs = [
 ]
 
 def parse_args():
-    """
-    Parse command-line arguments for Klines fetching.
-    """
     parser = argparse.ArgumentParser(description="Fetch Binance Klines and save to JSON.")
 
     parser.add_argument("--interval", type=str, default=Client.KLINE_INTERVAL_1HOUR, help="Candle interval (e.g., 1m, 5m, 1h, 1d).")
@@ -57,20 +63,26 @@ if __name__ == "__main__":
     start_time = datetime.now() - timedelta(days=args.days)
 
     for pair in trading_pairs:
-        print(f"\nFetching data for {pair}...")
+        logger.info(f"Fetching data for {pair}...")
 
-        # Fetch historical Klines
-        data = get_historical_klines(
-            symbol=pair,
-            interval=args.interval,
-            start_time=start_time,
-            limit=args.limit
-        )
+        try:
+            # Fetch historical Klines
+            data = get_historical_klines(
+                symbol=pair,
+                interval=args.interval,
+                start_time=start_time,
+                limit=args.limit
+            )
 
-        if data:
-            print(f"Retrieved {len(data)} candles for {pair} ({args.interval}) over the past {args.days} days.")
-            print("Sample candle:", data[0])
+            # Check if trading pair is listed
+            if not data or len(data[0]) < 14:
+                logger.warning(f"Pair not listed on Binance or no data available for {pair}")
+                continue
+            
+            logger.info(f"Retrieved {len(data)} candles for {pair} ({args.interval}) over the past {args.days} days.")
+            # logger.debug(f"Sample candle for {pair}: {data[0]}")
 
+            # Prepare JSON output
             output = {
                 "symbol": pair,
                 "interval": args.interval,
@@ -80,18 +92,27 @@ if __name__ == "__main__":
             }
 
             # Generate a descriptive filename
-            filename = f"{pair}_{args.interval}_{args.days}days_{args.limit}candles.json"
+            filename = f"{pair}_{args.interval}.json"
             file_path = os.path.join(DATA_DIR, filename)
 
             # Save the data to JSON
-            with open(file_path, "w") as json_file:
-                json.dump(output, json_file, indent=4)
+            try:
+                with open(file_path, "w") as json_file:
+                    json.dump(output, json_file, indent=4)
+                logger.info(f"Data saved to {file_path}")
+            except Exception as e:
+                logger.error(f"Failed to save {file_path}: {e}")
+                continue
 
-            print(f"\nData saved to {file_path}")
-
+            # Save to MongoDB
             try:
                 collection.delete_many({"symbol": pair})
                 collection.insert_one(output)
-                print(f"\nData successfully committed to MongoDB")
+                logger.info(f"Data successfully committed to MongoDB for {pair}")
             except Exception as e:
-                print(f"MongoDB error for {pair}: {e}")
+                logger.error(f"MongoDB error for {pair}: {e}")
+
+        except IndexError as e:
+            logger.error(f"Pair not listed on Binance or invalid response for {pair}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error fetching data for {pair}: {e}")
