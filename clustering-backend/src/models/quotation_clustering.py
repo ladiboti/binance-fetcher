@@ -409,6 +409,46 @@ def export_cluster_assignments(df_linear_regression_features, export_dir, client
     logger.info(f"Committed {len(mongo_docs)} cluster assignments to MongoDB (batch_id={batch_id})")
 
 
+def merge_and_export_clustered_data(combined_df, df_linear_regression_features, export_dir):
+    logger = logging.getLogger(__name__)
+    logger.info("Merging cluster assignments with original data...")
+    
+    cluster_data = df_linear_regression_features[['timestamp', 'symbol', 'agg_cluster']].copy()
+    
+    if pd.api.types.is_datetime64_any_dtype(cluster_data['timestamp']):
+        cluster_data['timestamp'] = pd.to_datetime(cluster_data['timestamp']).astype(np.int64) // 10**6
+    
+    if pd.api.types.is_datetime64_any_dtype(combined_df['timestamp']):
+        combined_df['timestamp'] = pd.to_datetime(combined_df['timestamp']).astype(np.int64) // 10**6
+    
+    # Create a unique key for merging
+    combined_df['merge_key'] = combined_df['timestamp'].astype(str) + '_' + combined_df['symbol']
+    cluster_data['merge_key'] = cluster_data['timestamp'].astype(str) + '_' + cluster_data['symbol']
+    
+    # Merge on the unique key
+    merged_df = pd.merge(
+        combined_df, 
+        cluster_data[['merge_key', 'agg_cluster']], 
+        on='merge_key', 
+        how='left'
+    )
+    
+    # Drop the merge key as it's no longer needed
+    merged_df.drop('merge_key', axis=1, inplace=True)
+    
+    # Fix timestamp to datetime format for better readability in the CSV
+    merged_df['timestamp'] = pd.to_datetime(merged_df['timestamp'], unit='ms')
+    
+    # Export to CSV
+    output_path = os.path.join(export_dir, 'full_data_with_clusters.csv')
+    merged_df.to_csv(output_path, index=False)
+    
+    logger.info(f"Full data with cluster assignments exported to {output_path}")
+    logger.info(f"Total rows: {len(merged_df)}, with clusters: {merged_df['agg_cluster'].notna().sum()}")
+    
+    return merged_df
+
+
 def run_clustering_pipeline():
     """Main function to orchestrate the entire crypto analysis process"""
     # Setup
@@ -449,6 +489,9 @@ def run_clustering_pipeline():
     
     # Export cluster assignments
     export_cluster_assignments(df_linear_regression_features, EXPORT_DIR, client)
+
+    # Merge cluster assignments with original data and export
+    merge_and_export_clustered_data(combined_df, df_linear_regression_features, EXPORT_DIR)
     
     logger.info("Crypto analysis completed successfully.")
     return True
