@@ -19,7 +19,7 @@ env/
 .ipynb_checkpoints/
 
 # === Pip files ===
-pip-wheel-metadata/
+pip-wheel-meta/
 *.egg
 *.whl
 
