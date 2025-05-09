@@ -1,0 +1,11 @@
+-- DROP TABLE IF EXISTS currencies
+
+CREATE TABLE currencies (
+    id SERIAL PRIMARY KEY,
+    symbol VARCHAR(10) UNIQUE NOT NULL,
+    name VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (symbol)
+);
+
+CREATE INDEX idx_currencies_symbol ON currencies (symbol);
