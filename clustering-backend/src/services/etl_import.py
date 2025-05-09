@@ -35,42 +35,52 @@ try:
     logger.info(f"Data loaded successfully, total records: {len(data)}")
     
     # Convert timestamp to proper format
-    # Explicitly specify format for to_datetime function
     data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
+    
+    # Sort data by timestamp to ensure chronological processing
+    data = data.sort_values(['symbol', 'timestamp'])
     
     # Extract unique symbols
     unique_symbols = data["symbol"].unique()
     logger.info(f"Number of unique currencies: {len(unique_symbols)}")
     
+    # Dictionary to track current cluster for each symbol
+    current_clusters = {}
+    
     # Populate currencies table and get IDs
     symbol_id_map = {}
     
     with engine.begin() as connection:
+        # First, alter the currencies table to add cluster_id column if it doesn't exist
+        try:
+            connection.execute(text("""
+                ALTER TABLE currencies ADD COLUMN IF NOT EXISTS cluster_id INTEGER;
+            """))
+            logger.info("Added cluster_id column to currencies table if it didn't exist")
+        except Exception as e:
+            logger.warning(f"Could not add cluster_id column (it might already exist): {e}")
+        
         for symbol in unique_symbols:
             name = symbol.replace("USDT", "")
             
-            # Insert or get existing ID
+            # Get initial cluster for this symbol
+            initial_data = data[data['symbol'] == symbol].iloc[0]
+            initial_cluster = int(initial_data['agg_cluster'])
+            current_clusters[symbol] = initial_cluster
+            
+            # Insert or update with initial cluster
             result = connection.execute(text("""
-                INSERT INTO currencies (symbol, name)
-                VALUES (:symbol, :name)
-                ON CONFLICT (symbol) DO NOTHING
+                INSERT INTO currencies (symbol, name, cluster_id)
+                VALUES (:symbol, :name, :cluster_id)
+                ON CONFLICT (symbol) DO UPDATE SET
+                    cluster_id = :cluster_id
                 RETURNING id;
-            """), {"symbol": symbol, "name": name})
+            """), {"symbol": symbol, "name": name, "cluster_id": initial_cluster})
             
             row = result.fetchone()
             if row:
                 symbol_id_map[symbol] = row[0]
-                logger.info(f"Inserted: {symbol} (ID: {row[0]})")
-            
-            # If we didn't get an ID back (because it already existed), retrieve it
-            if symbol not in symbol_id_map:
-                result = connection.execute(text("""
-                    SELECT id FROM currencies WHERE symbol = :symbol
-                """), {"symbol": symbol})
-                row = result.fetchone()
-                if row:
-                    symbol_id_map[symbol] = row[0]
-                    logger.info(f"Existing currency: {symbol} (ID: {row[0]})")
+                logger.info(f"Inserted/Updated: {symbol} (ID: {row[0]}, Initial Cluster: {initial_cluster})")
     
     logger.info(f"Total currencies processed: {len(symbol_id_map)}")
     
@@ -88,12 +98,31 @@ try:
         try:
             with engine.begin() as connection:
                 for index, row in batch.iterrows():
-                    # Get currency ID
-                    currency_id = symbol_id_map.get(row["symbol"])
+                    symbol = row["symbol"]
+                    currency_id = symbol_id_map.get(symbol)
                     
                     if currency_id is None:
-                        logger.warning(f"Skipping: unknown symbol: {row['symbol']}")
+                        logger.warning(f"Skipping: unknown symbol: {symbol}")
                         continue
+                    
+                    # Get the cluster ID from the row
+                    new_cluster_id = int(row["agg_cluster"])
+                    
+                    # Check if cluster has changed
+                    if new_cluster_id != current_clusters.get(symbol):
+                        old_cluster_id = current_clusters.get(symbol)
+                        
+                        # Update the current cluster
+                        current_clusters[symbol] = new_cluster_id
+                        
+                        # Update the currency table with the new cluster
+                        connection.execute(text("""
+                            UPDATE currencies 
+                            SET cluster_id = :cluster_id
+                            WHERE id = :currency_id
+                        """), {"cluster_id": new_cluster_id, "currency_id": currency_id})
+                        
+                        logger.info(f"Cluster change detected for {symbol}: {old_cluster_id} -> {new_cluster_id} at {row['timestamp']}")
                     
                     # Insert data into historical_prices table
                     historical_query = text("""
@@ -115,30 +144,30 @@ try:
                     connection.execute(historical_query, {
                         "currency_id": currency_id,
                         "timestamp": row["timestamp"],
-                        "cluster_id": row["agg_cluster"],
+                        "cluster_id": new_cluster_id,
                         "open": row["open"],
                         "high": row["high"],
                         "low": row["low"],
                         "close": row["close"],
                         "volume": row["volume"],
-                        "sma_10": row["sma_10"] if not pd.isna(row["sma_10"]) else None,
-                        "ema_10": row["ema_10"] if not pd.isna(row["ema_10"]) else None,
-                        "rsi_14": row["rsi_14"] if not pd.isna(row["rsi_14"]) else None,
-                        "bollinger_upper": row["bollinger_upper"] if not pd.isna(row["bollinger_upper"]) else None,
-                        "bollinger_middle": row["bollinger_middle"] if not pd.isna(row["bollinger_middle"]) else None,
-                        "bollinger_lower": row["bollinger_lower"] if not pd.isna(row["bollinger_lower"]) else None,
-                        "macd": row["macd"] if not pd.isna(row["macd"]) else None,
-                        "macd_signal": row["macd_signal"] if not pd.isna(row["macd_signal"]) else None,
-                        "atr": row["atr"] if not pd.isna(row["atr"]) else None,
-                        "obv": row["obv"] if not pd.isna(row["obv"]) else None,
-                        "best_bid_price": row["best_bid_price"] if not pd.isna(row["best_bid_price"]) else None,
-                        "best_ask_price": row["best_ask_price"] if not pd.isna(row["best_ask_price"]) else None,
-                        "best_bid_volume": row["best_bid_volume"] if not pd.isna(row["best_bid_volume"]) else None,
-                        "best_ask_volume": row["best_ask_volume"] if not pd.isna(row["best_ask_volume"]) else None,
-                        "bid_ask_spread": row["bid_ask_spread"] if not pd.isna(row["bid_ask_spread"]) else None,
-                        "order_book_imbalance": row["order_book_imbalance"] if not pd.isna(row["order_book_imbalance"]) else None,
-                        "bid_volume_depth": row["bid_volume_depth"] if not pd.isna(row["bid_volume_depth"]) else None,
-                        "ask_volume_depth": row["ask_volume_depth"] if not pd.isna(row["ask_volume_depth"]) else None
+                        "sma_10": row["sma_10"],
+                        "ema_10": row["ema_10"],
+                        "rsi_14": row["rsi_14"],
+                        "bollinger_upper": row["bollinger_upper"],
+                        "bollinger_middle": row["bollinger_middle"],
+                        "bollinger_lower": row["bollinger_lower"],
+                        "macd": row["macd"],
+                        "macd_signal": row["macd_signal"],
+                        "atr": row["atr"],
+                        "obv": row["obv"],
+                        "best_bid_price": row["best_bid_price"],
+                        "best_ask_price": row["best_ask_price"],
+                        "best_bid_volume": row["best_bid_volume"],
+                        "best_ask_volume": row["best_ask_volume"],
+                        "bid_ask_spread": row["bid_ask_spread"],
+                        "order_book_imbalance": row["order_book_imbalance"],
+                        "bid_volume_depth": row["bid_volume_depth"],
+                        "ask_volume_depth": row["ask_volume_depth"]
                     })
                     
                     # Log progress

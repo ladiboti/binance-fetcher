@@ -11,3 +11,50 @@ CREATE TABLE cluster_changes (
 
 CREATE INDEX idx_cluster_changes_currency_id ON cluster_changes (currency_id);
 CREATE INDEX idx_cluster_changes_timestamp ON cluster_changes (change_timestamp);
+
+CREATE TABLE IF NOT EXISTS cluster_changes (
+    id SERIAL PRIMARY KEY,
+    currency_id INTEGER NOT NULL,
+    symbol VARCHAR(10) NOT NULL,
+    from_cluster_id INTEGER NOT NULL,
+    to_cluster_id INTEGER NOT NULL,
+    change_timestamp TIMESTAMPTZ NOT NULL,
+    detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (currency_id) REFERENCES currencies (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cluster_changes_currency_id ON cluster_changes (currency_id);
+CREATE INDEX IF NOT EXISTS idx_cluster_changes_timestamp ON cluster_changes (change_timestamp);
+
+CREATE OR REPLACE FUNCTION track_cluster_changes()
+RETURNS TRIGGER AS $$
+DECLARE
+    currency_symbol VARCHAR(10);
+BEGIN
+    IF NEW.cluster_id <> OLD.cluster_id THEN       
+        INSERT INTO cluster_changes (
+            currency_id,
+            symbol,
+            from_cluster_id,
+            to_cluster_id,
+            change_timestamp
+        ) VALUES (
+            NEW.id,  
+            NEW.symbol,  
+            OLD.cluster_id,
+            NEW.cluster_id,
+            CURRENT_TIMESTAMP
+        );
+        
+        RAISE NOTICE 'Cluster change detected for %: % -> %',
+            NEW.symbol, OLD.cluster_id, NEW.cluster_id;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER track_cluster_changes_trigger
+AFTER UPDATE OF cluster_id ON currencies
+FOR EACH ROW
+EXECUTE FUNCTION track_cluster_changes();

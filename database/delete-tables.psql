@@ -1,5 +1,5 @@
 -- 1. Drop snapshots table
-DROP TABLE IF EXISTS snapshots CASCADE;
+DROP TABLE IF EXISTS currency_snapshots CASCADE;
 
 -- 2. Drop cluster_changes table
 DROP TABLE IF EXISTS cluster_changes CASCADE;

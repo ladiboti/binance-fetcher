@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Database connection
 POSTGRES_URI = os.getenv("POSTGRES_URI")
-MIGRATIONS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../database-migrations"))
+MIGRATIONS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../database"))
 
 # Parse the PostgreSQL URI
 parsed_uri = urlparse(POSTGRES_URI)

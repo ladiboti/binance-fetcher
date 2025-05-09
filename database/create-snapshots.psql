@@ -1,16 +1,51 @@
--- DROP TABLE IF EXISTS snapshots;
-
-CREATE TABLE snapshots (
-    id BIGSERIAL PRIMARY KEY,
-    currency_id INTEGER NOT NULL,
-    timestamp TIMESTAMPTZ NOT NULL,
-    cluster_id INTEGER NOT NULL,
-    snapshot_type VARCHAR(20) DEFAULT 'automatic', 
-    snapshot_reason VARCHAR(255) DEFAULT 'Periodic snapshot',
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (currency_id) REFERENCES currencies (id)
+CREATE TABLE currency_snapshots (
+    id SERIAL PRIMARY KEY,
+    snapshot_time TIMESTAMPTZ NOT NULL,
+    snapshot_data JSONB NOT NULL
 );
 
-CREATE INDEX idx_snapshots_currency_timestamp ON snapshots (currency_id, timestamp);
-CREATE INDEX idx_snapshots_cluster_id ON snapshots (cluster_id);
-CREATE INDEX idx_snapshots_created_at ON snapshots (created_at);
+
+CREATE INDEX idx_currency_snapshots_time ON currency_snapshots (snapshot_time);
+
+
+CREATE OR REPLACE FUNCTION create_currency_snapshot()
+RETURNS INTEGER AS $$
+DECLARE
+    snapshot_id INTEGER;
+BEGIN
+    INSERT INTO currency_snapshots (snapshot_time, snapshot_data)
+    SELECT 
+        CURRENT_TIMESTAMP,
+        jsonb_agg(
+            jsonb_build_object(
+                'id', id,
+                'symbol', symbol,
+                'name', name,
+                'cluster_id', cluster_id
+            )
+        )
+    FROM currencies
+    RETURNING id INTO snapshot_id;
+    
+    RAISE NOTICE 'Created snapshot with ID: %', snapshot_id;
+    RETURN snapshot_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION trigger_currency_snapshot()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Csak akkor készítünk snapshotot, ha a cluster_id változott
+    IF NEW.cluster_id <> OLD.cluster_id THEN
+        PERFORM create_currency_snapshot();
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER currency_snapshot_trigger
+AFTER UPDATE OF cluster_id ON currencies
+FOR EACH ROW
+EXECUTE FUNCTION trigger_currency_snapshot();
