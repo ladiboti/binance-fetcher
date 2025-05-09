@@ -24,7 +24,7 @@ user = parsed_uri.username
 password = parsed_uri.password
 database = parsed_uri.path[1:]  # Remove leading "/"
 
-PSQL_PATH = "/usr/sbin/psql"  # vagy ahol a psql telepítve van
+PSQL_PATH = "/usr/sbin/psql" 
 
 def run_migration(filename):
     migration_file = os.path.join(MIGRATIONS_DIR, filename)
