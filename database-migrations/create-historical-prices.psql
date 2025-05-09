@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS historical_prices_part CASCADE;
+-- DROP TABLE IF EXISTS historical_prices_part CASCADE;
 
 CREATE TABLE historical_prices_part (
     id BIGSERIAL,

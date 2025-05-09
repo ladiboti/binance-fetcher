@@ -1,4 +1,4 @@
--- DROP TABLE currencies
+-- DROP TABLE IF EXISTS currencies
 
 CREATE TABLE currencies (
     id SERIAL PRIMARY KEY,

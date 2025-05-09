@@ -71,12 +71,6 @@ project.fragment.lock.json
 appsettings.*.json
 secrets.json
 
-# === DATABASES ===
-*.sql
-*.dump
-*.pgsql
-*.pgpass
-
 # === VSCODE ===
 .vscode/
 .code-workspace
