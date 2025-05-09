@@ -8,8 +8,11 @@ from flask import Flask, jsonify, request, send_from_directory
 from datetime import datetime, timedelta
 from binance.client import Client
 from dotenv import load_dotenv
-from src.services import get_historical_klines
+
 from src.models import run_clustering_pipeline
+from src.services import get_historical_klines
+from src.services import run_migration_pipeline
+from src.services import run_etl_pipeline
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
@@ -247,6 +250,8 @@ if __name__ == "__main__":
         clear_directory(DATA_DIR)
         fetch_and_save_data(args.interval, args.days, args.limit)
         run_clustering_pipeline()
+        run_migration_pipeline()
+        run_etl_pipeline()
     else:
         # Run as a web server
         app.run(host='0.0.0.0', port=args.port, debug=args.debug)

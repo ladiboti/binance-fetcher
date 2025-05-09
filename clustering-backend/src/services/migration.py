@@ -42,7 +42,7 @@ def run_migration(filename):
         logger.error(f"Error running migration {filename}: {e}")
         logger.error(e.stderr)
 
-def main():
+def run_migration_pipeline():
     logger.info(f"Running migrations from directory: {MIGRATIONS_DIR}")
     
     migrations = [
@@ -55,6 +55,3 @@ def main():
     
     for migration in migrations:
         run_migration(migration)
-
-if __name__ == "__main__":
-    main()

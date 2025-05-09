@@ -208,6 +208,3 @@ def run_etl_pipeline(data_file_path=None):
         logger.error(f"ETL pipeline failed: {e}")
         return False
 
-# Main execution
-if __name__ == "__main__":
-    run_etl_pipeline()
