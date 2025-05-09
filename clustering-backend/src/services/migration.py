@@ -18,7 +18,6 @@ MIGRATIONS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../
 
 # Parse the PostgreSQL URI
 parsed_uri = urlparse(POSTGRES_URI)
-print(parsed_uri)
 host = parsed_uri.hostname
 port = parsed_uri.port or 5432
 user = parsed_uri.username
@@ -47,6 +46,7 @@ def main():
     logger.info(f"Running migrations from directory: {MIGRATIONS_DIR}")
     
     migrations = [
+        "delete-tables.psql",
         "create-currencies.psql",
         "create-historical-prices.psql",
         "create-cluster-changes.psql",

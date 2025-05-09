@@ -18,15 +18,23 @@ POSTGRES_URI = os.getenv("POSTGRES_URI")
 logger.info(f"Connecting to PostgreSQL database at {POSTGRES_URI}...")
 engine = create_engine(POSTGRES_URI)
 
+# Ellenőrizzük, hogy tényleg kapcsolódunk-e
+with engine.connect() as connection:
+    result = connection.execute(text("SELECT current_database(), current_user;"))
+    for row in result:
+        logger.info(f"Connected to database: {row[0]}, user: {row[1]}")
+
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../../data/full_data_with_clusters.csv")
 logger.info(f"Loading data from {DATA_FILE}")
 data = pd.read_csv(DATA_FILE)
 unique_symbols = data["symbol"].unique()
 logger.info(f"Data loaded successfully, total records: {len(data)}")
 
+# **Külön tranzakció a beszúráshoz**
 logger.info("Inserting currencies into 'currencies' table...")
 inserted_count = 0
-with engine.connect() as connection:
+
+with engine.begin() as connection:  # Új tranzakció, ami automatikusan commitol
     for symbol in unique_symbols:
         result = connection.execute(text("""
             INSERT INTO currencies (symbol, name)
@@ -34,11 +42,12 @@ with engine.connect() as connection:
             ON CONFLICT (symbol) DO NOTHING
             RETURNING id;
         """), {"symbol": symbol, "name": symbol})
-
-        # Count successful inserts
-        if result.fetchone() is not None:
+        
+        # Ha volt beszúrás, a result nem lesz üres
+        inserted_row = result.fetchone()
+        if inserted_row is not None:
             inserted_count += 1
-
-logger.info(f"Inserted {inserted_count} unique currencies.")
+            
+    logger.info(f"Inserted {inserted_count} unique currencies.")
 
 logger.info("Data import completed.")
