@@ -4,6 +4,7 @@ CREATE TABLE historical_prices_part (
     id BIGSERIAL,
     currency_id INTEGER NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL,
+    cluster_id INTEGER NOT NULL,
     open DECIMAL(20, 8) NOT NULL,
     high DECIMAL(20, 8) NOT NULL,
     low DECIMAL(20, 8) NOT NULL,

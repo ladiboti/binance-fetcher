@@ -98,12 +98,12 @@ try:
                     # Insert data into historical_prices table
                     historical_query = text("""
                         INSERT INTO historical_prices (
-                            currency_id, timestamp, open, high, low, close, volume,
+                            currency_id, timestamp, cluster_id, open, high, low, close, volume,
                             sma_10, ema_10, rsi_14, bollinger_upper, bollinger_middle, bollinger_lower,
                             macd, macd_signal, atr, obv, best_bid_price, best_ask_price, best_bid_volume,
                             best_ask_volume, bid_ask_spread, order_book_imbalance, bid_volume_depth, ask_volume_depth
                         ) VALUES (
-                            :currency_id, :timestamp, :open, :high, :low, :close, :volume,
+                            :currency_id, :timestamp, :cluster_id, :open, :high, :low, :close, :volume,
                             :sma_10, :ema_10, :rsi_14, :bollinger_upper, :bollinger_middle, :bollinger_lower,
                             :macd, :macd_signal, :atr, :obv, :best_bid_price, :best_ask_price, :best_bid_volume,
                             :best_ask_volume, :bid_ask_spread, :order_book_imbalance, :bid_volume_depth, :ask_volume_depth
@@ -115,6 +115,7 @@ try:
                     connection.execute(historical_query, {
                         "currency_id": currency_id,
                         "timestamp": row["timestamp"],
+                        "cluster_id": row["agg_cluster"],
                         "open": row["open"],
                         "high": row["high"],
                         "low": row["low"],
