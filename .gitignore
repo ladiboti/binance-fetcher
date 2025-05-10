@@ -1,86 +1,91 @@
 # === PYTHON ===
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.env
+
+**pycache**/
+\*.py\[cod]
+\*.pyo
+\*.pyd
+\*.env
 .env
-*.sqlite3
-*.db
-*.egg-info/
-*.log
+\*.sqlite3
+\*.db
+\*.egg-info/
+\*.log
 
 # === Virtual environments ===
+
 venv/
 env/
 .venv/
 
 # === Jupyter Notebook checkpoint ===
-.ipynb_checkpoints/
+
+.ipynb\_checkpoints/
 
 # === Pip files ===
+
 pip-wheel-meta/
-*.egg
-*.whl
+\*.egg
+\*.whl
 
 # === Flask instance folders ===
+
 instance/
-*.bak
+\*.bak
 
 # === JSON adatmentés (ha nem akarod követni) ===
-clustering-backend/data/*.json
+
+clustering-backend/data/\*.json
 clustering-backend/data/
-clustering-backend/src/models/exported_data/
-clustering-backend/src/models/cluster_assignments.csv
+clustering-backend/src/models/exported\_data/
+clustering-backend/src/models/cluster\_assignments.csv
 
-# === NODE / ANGULAR ===
-node_modules/
-dist/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# === CLUSTERING FRONTEND ===
 
-# Angular environment files
-src/environments/*.ts
-!.gitkeep
-
-# Angular build cache
-.angular/
-.cache/
-
-# === TAILWINDCSS / POSTCSS ===
-.postcssrc
-tailwind.config.js
-tailwind.config.cjs
-tailwind.config.ts
-*.css.map
+clustering-frontend/node\_modules/
+clustering-frontend/dist/
+clustering-frontend/.angular/
+clustering-frontend/.cache/
+clustering-frontend/src/environments/*.ts
+clustering-frontend/npm-debug.log*
+clustering-frontend/yarn-debug.log\*
+clustering-frontend/yarn-error.log\*
+clustering-frontend/tailwind.config.js
+clustering-frontend/tailwind.config.cjs
+clustering-frontend/tailwind.config.ts
+clustering-frontend/\*.css.map
+clustering-frontend/.postcssrc
 
 # === DOTNET / C# ===
+
 bin/
 obj/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-*.vs/
+\*.user
+\*.suo
+\*.userosscache
+\*.sln.docstates
+\*.vs/
 .vscode/
 project.lock.json
 project.fragment.lock.json
 
 # .NET environment files
-appsettings.*.json
+
+appsettings.\*.json
 secrets.json
 
 # === VSCODE ===
+
 .vscode/
 .code-workspace
 
 # === OS / EDITOR SPECIFIC ===
-.DS_Store
+
+.DS\_Store
 Thumbs.db
 desktop.ini
-*.swp
-*.swo
+\*.swp
+\*.swo
 
 # === GIT ===
-*.orig
+
+\*.orig
