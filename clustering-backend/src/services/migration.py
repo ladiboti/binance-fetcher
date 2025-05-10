@@ -29,12 +29,18 @@ PSQL_PATH = "/usr/sbin/psql"
 def run_migration(filename):
     migration_file = os.path.join(MIGRATIONS_DIR, filename)
     logger.info(f"Running migration: {filename}")
+    
+    # Set PGPASSWORD environment variable for passwordless authentication
+    env = os.environ.copy()
+    env["PGPASSWORD"] = password
+    
     try:
         result = subprocess.run(
-            [PSQL_PATH, "-h", host, "-U", user, "-d", database, "-f", migration_file],
+            [PSQL_PATH, "-h", host, "-p", str(port), "-U", user, "-d", database, "-f", migration_file],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
+            env=env  
         )
         logger.info(f"Successfully ran migration: {filename}")
         logger.info(result.stdout)
@@ -55,3 +61,6 @@ def run_migration_pipeline():
     
     for migration in migrations:
         run_migration(migration)
+
+if __name__ == "__main__":
+    run_migration_pipeline()
