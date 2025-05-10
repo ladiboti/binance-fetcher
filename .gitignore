@@ -73,6 +73,24 @@ project.fragment.lock.json
 appsettings.\*.json
 secrets.json
 
+# === API BACKEND (Entity Framework / Web API) ===
+
+api-backend/bin/
+api-backend/obj/
+api-backend/Migrations/
+api-backend/*.db
+api-backend/*.sqlite3
+api-backend/*.sqlite
+api-backend/*.json
+api-backend/appsettings.*.json
+api-backend/secrets.json
+api-backend/*.csproj.user
+api-backend/\*.suo
+api-backend/.vs/
+api-backend/.vscode/
+api-backend/wwwroot/
+api-backend/Properties/launchSettings.json
+
 # === VSCODE ===
 
 .vscode/
