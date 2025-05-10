@@ -5,6 +5,7 @@ import pymongo
 import logging
 import shutil
 from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 from datetime import datetime, timedelta
 from binance.client import Client
 from dotenv import load_dotenv
@@ -19,6 +20,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
 
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Configure logging
 logging.basicConfig(
@@ -47,18 +49,6 @@ trading_pairs = [
     "DOGEUSDT",  # Dogecoin
     "TONUSDT",   # Toncoin
     "ADAUSDT",   # Cardano
-    "AVAXUSDT",  # Avalanche
-    "DOTUSDT",   # Polkadot
-    "MATICUSDT", # Polygon
-    "SHIBUSDT",  # Shiba Inu
-    "TRXUSDT",   # TRON
-    "LTCUSDT",   # Litecoin
-    "APTUSDT",   # Aptos
-    "INJUSDT",   # Injective
-    "ARBUSDT",   # Arbitrum
-    "OPUSDT",    # Optimism
-    "PEPEUSDT",  # PEPE
-    "RNDRUSDT"   # Render Token
 ]
 
 # Helper functions
@@ -130,6 +120,79 @@ def fetch_and_save_data(interval, days, limit):
             
             # Save to MongoDB
             try:
+                # collection.delete_many({"symbol": pair})
+                # deleted = collection.delete_many({"symbol": pair, "interval": interval})
+                collection.delete_many({})
+                logger.info(f"Deleted {deleted.deleted_count} documents for {pair} ({interval})")
+                collection.insert_one(output)
+                logger.info(f"Data successfully committed to MongoDB for {pair}")
+                results.append({"symbol": pair, "status": "success", "candles": len(data)})
+            except Exception as e:
+                logger.error(f"MongoDB error for {pair}: {e}")
+                results.append({"symbol": pair, "status": "error", "message": f"MongoDB error: {str(e)}"})
+            
+        except IndexError as e:
+            logger.error(f"Pair not listed on Binance or invalid response for {pair}: {e}")
+            results.append({"symbol": pair, "status": "error", "message": f"Invalid response: {str(e)}"})
+        except Exception as e:
+            logger.error(f"Unexpected error fetching data for {pair}: {e}")
+            results.append({"symbol": pair, "status": "error", "message": f"Unexpected error: {str(e)}"})
+    
+    return results
+
+
+def fetch_and_save_data_for_symbols(symbols, interval, days, limit):
+    """Fetch data for specified trading pairs and save to files and database"""
+    results = []
+    
+    # Compute the start time based on the number of days
+    start_time = datetime.now() - timedelta(days=days)
+    
+    for pair in symbols:
+        logger.info(f"Fetching data for {pair}...")
+        
+        try:
+            # Fetch historical Klines
+            data = get_historical_klines(
+                symbol=pair,
+                interval=interval,
+                start_time=start_time,
+                limit=limit
+            )
+            
+            # Check if trading pair is listed
+            if not data or len(data[0]) < 14:
+                logger.warning(f"Pair not listed on Binance or no data available for {pair}")
+                results.append({"symbol": pair, "status": "error", "message": "No data available"})
+                continue
+            
+            logger.info(f"Retrieved {len(data)} candles for {pair} ({interval}) over the past {days} days.")
+            
+            # Prepare JSON output
+            output = {
+                "symbol": pair,
+                "interval": interval,
+                "days": days,
+                "limit": limit,
+                "data": data
+            }
+            
+            # Generate a descriptive filename
+            filename = f"{pair}_{interval}.json"
+            file_path = os.path.join(DATA_DIR, filename)
+            
+            # Save the data to JSON
+            try:
+                with open(file_path, "w") as json_file:
+                    json.dump(output, json_file, indent=4)
+                logger.info(f"Data saved to {file_path}")
+            except Exception as e:
+                logger.error(f"Failed to save {file_path}: {e}")
+                results.append({"symbol": pair, "status": "error", "message": f"Failed to save file: {str(e)}"})
+                continue
+            
+            # Save to MongoDB
+            try:
                 collection.delete_many({"symbol": pair})
                 collection.insert_one(output)
                 logger.info(f"Data successfully committed to MongoDB for {pair}")
@@ -151,24 +214,40 @@ def fetch_and_save_data(interval, days, limit):
 # API Routes
 @app.route('/api/fetch', methods=['POST'])
 def fetch_data():
-    """API endpoint to fetch historical data"""
+    """API endpoint to fetch historical data and run the complete pipeline"""
     try:
         # Get parameters from request
         data = request.get_json() or {}
+        custom_trading_pairs = data.get('trading_pairs', None)
         interval = data.get('interval', Client.KLINE_INTERVAL_1HOUR)
         days = int(data.get('days', 30))
         limit = int(data.get('limit', 1000))
         
         # Clear data directory
         clear_directory(DATA_DIR)
+
+        collection.delete_many({})
         
-        # Fetch and save data
-        results = fetch_and_save_data(interval, days, limit)
+        # Használjuk a frontendről kapott szimbólumokat, ha vannak
+        if custom_trading_pairs and isinstance(custom_trading_pairs, list):
+            # Fetch and save data for custom trading pairs
+            results = fetch_and_save_data_for_symbols(custom_trading_pairs, interval, days, limit)
+        else:
+            # Használjuk az alapértelmezett listát, ha nincs egyedi lista
+            results = fetch_and_save_data(interval, days, limit)
+        
+        # Futtatjuk a teljes pipeline-t
+        clustering_result = run_clustering_pipeline()
+        migration_result = run_migration_pipeline()
+        etl_result = run_etl_pipeline()
         
         return jsonify({
             "status": "success",
-            "message": f"Data fetched for {len(results)} trading pairs",
-            "results": results
+            "message": f"Data fetched for {len(results)} trading pairs and pipeline completed",
+            "results": results,
+            "clustering": clustering_result,
+            "migration": migration_result,
+            "etl": etl_result
         })
     
     except Exception as e:

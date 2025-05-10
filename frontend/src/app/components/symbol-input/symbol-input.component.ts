@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RunClusteringPipelineService } from '../../services/run-clustering-pipeline.service';
 
 @Component({
   selector: 'app-symbol-input',
@@ -10,6 +11,9 @@ export class SymbolInputComponent {
   symbols: string[] = [];
   newSymbol: string = '';
   errorMessage: string = '';
+  isLoading: boolean = false;
+
+  constructor(private clusteringService: RunClusteringPipelineService) { }
 
   onInputChange(value: string) {
     this.newSymbol = value;
@@ -40,5 +44,27 @@ export class SymbolInputComponent {
   
   removeSymbol(symbol: string) {
     this.symbols = this.symbols.filter(s => s !== symbol);
+  }
+
+  fetchSymbols() {
+    if (this.symbols.length === 0) {
+      this.errorMessage = 'Please add at least one symbol';
+      return;
+    }
+    
+    this.isLoading = true;
+    
+    this.clusteringService.fetchSymbols(this.symbols)
+      .subscribe({
+        next: (response) => {
+          console.log('Pipeline completed:', response);
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error running pipeline:', error);
+          this.errorMessage = 'Failed to run clustering pipeline';
+          this.isLoading = false;
+        }
+      });
   }
 }

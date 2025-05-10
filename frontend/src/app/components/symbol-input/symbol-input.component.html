@@ -16,6 +16,13 @@
       >
         Add
       </button>
+
+      <button 
+        (click)="fetchSymbols()"
+        class="bg-[var(--color-accent)] text-[var(--color-primary)] px-4 py-2 rounded-lg hover:bg-[var(--color-highlight)] transition-colors"
+      >
+        Fetch
+      </button>
     </div>
 
     <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
