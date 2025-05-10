@@ -3,10 +3,12 @@ import { BrowserModule, provideClientHydration, withEventReplay } from '@angular
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { SymbolInputComponent } from './components/symbol-input/symbol-input.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    SymbolInputComponent
   ],
   imports: [
     BrowserModule,
