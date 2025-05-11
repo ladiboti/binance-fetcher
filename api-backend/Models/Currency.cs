@@ -16,6 +16,9 @@ namespace api_backend.Models
         
         [Column("cluster_id")]
         public int? ClusterId { get; set; }
+
+        [Column("total_cluster_changes")]
+        public int? TotalClusterChanges { get; set; }
         
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }

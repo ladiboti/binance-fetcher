@@ -8,8 +8,8 @@
           *ngFor="let currency of currencies" 
           class="bg-[var(--color-surface)] text-[var(--color-highlight)] px-3 py-1 m-1 rounded-lg flex items-center gap-2"
         >
-          <span>{{ currency.name }} ({{ currency.symbol }})</span>
-          <span class="text-sm text-gray-400">Cluster: {{ currency.clusterId }}</span>
+          <span>{{ currency.name }}</span>
+          <span class="text-sm text-gray-400">Total cluster changes: {{ currency.totalClusterChanges }}</span>
         </div>
     </div>
 </div>

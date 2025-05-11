@@ -6,6 +6,7 @@ interface Currency {
   symbol: string;
   name: string;
   clusterId: number;
+  totalClusterChanges: number;
   createdAt: string;
 }
 
