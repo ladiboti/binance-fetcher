@@ -1,24 +1,10 @@
-CREATE TABLE cluster_changes (
-    id SERIAL PRIMARY KEY,
-    currency_id INTEGER NOT NULL,
-    symbol VARCHAR(10) NOT NULL,
-    from_cluster_id INTEGER NOT NULL,
-    to_cluster_id INTEGER NOT NULL,
-    change_timestamp TIMESTAMPTZ NOT NULL,
-    detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (currency_id) REFERENCES currencies (id)
-);
-
-CREATE INDEX idx_cluster_changes_currency_id ON cluster_changes (currency_id);
-CREATE INDEX idx_cluster_changes_timestamp ON cluster_changes (change_timestamp);
-
 CREATE TABLE IF NOT EXISTS cluster_changes (
     id SERIAL PRIMARY KEY,
     currency_id INTEGER NOT NULL,
     symbol VARCHAR(10) NOT NULL,
     from_cluster_id INTEGER NOT NULL,
     to_cluster_id INTEGER NOT NULL,
-    change_timestamp TIMESTAMPTZ NOT NULL,
+    change_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (currency_id) REFERENCES currencies (id)
 );
@@ -26,12 +12,27 @@ CREATE TABLE IF NOT EXISTS cluster_changes (
 CREATE INDEX IF NOT EXISTS idx_cluster_changes_currency_id ON cluster_changes (currency_id);
 CREATE INDEX IF NOT EXISTS idx_cluster_changes_timestamp ON cluster_changes (change_timestamp);
 
+ALTER TABLE currencies ADD COLUMN IF NOT EXISTS total_cluster_changes INTEGER DEFAULT 0;
+
 CREATE OR REPLACE FUNCTION track_cluster_changes()
 RETURNS TRIGGER AS $$
 DECLARE
-    currency_symbol VARCHAR(10);
+    last_timestamp TIMESTAMPTZ;
 BEGIN
-    IF NEW.cluster_id <> OLD.cluster_id THEN       
+    IF NEW.cluster_id <> OLD.cluster_id THEN
+        -- Lekérdezzük az utolsó timestamp-et a historical_prices táblából
+        SELECT timestamp INTO last_timestamp
+        FROM historical_prices
+        WHERE currency_id = NEW.id
+        ORDER BY timestamp DESC
+        LIMIT 1;
+        
+        -- Ha nincs találat, használjuk a CURRENT_TIMESTAMP-et
+        IF last_timestamp IS NULL THEN
+            last_timestamp := CURRENT_TIMESTAMP;
+        END IF;
+        
+        -- Beszúrjuk a változást a cluster_changes táblába
         INSERT INTO cluster_changes (
             currency_id,
             symbol,
@@ -43,18 +44,43 @@ BEGIN
             NEW.symbol,  
             OLD.cluster_id,
             NEW.cluster_id,
-            CURRENT_TIMESTAMP
+            last_timestamp
         );
         
-        RAISE NOTICE 'Cluster change detected for %: % -> %',
-            NEW.symbol, OLD.cluster_id, NEW.cluster_id;
+        RAISE NOTICE 'Cluster change detected for %: % -> % at %',
+            NEW.symbol, OLD.cluster_id, NEW.cluster_id, last_timestamp;
     END IF;
     
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+
+DROP TRIGGER IF EXISTS track_cluster_changes_trigger ON currencies;
+
 CREATE TRIGGER track_cluster_changes_trigger
 AFTER UPDATE OF cluster_id ON currencies
 FOR EACH ROW
 EXECUTE FUNCTION track_cluster_changes();
+
+CREATE OR REPLACE FUNCTION update_total_cluster_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE currencies
+    SET total_cluster_changes = (
+        SELECT COUNT(*) 
+        FROM cluster_changes
+        WHERE currency_id = NEW.currency_id
+    )
+    WHERE id = NEW.currency_id;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_total_cluster_changes_trigger ON cluster_changes;
+
+CREATE TRIGGER update_total_cluster_changes_trigger
+AFTER INSERT ON cluster_changes
+FOR EACH ROW
+EXECUTE FUNCTION update_total_cluster_changes();
