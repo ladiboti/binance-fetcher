@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { RunClusteringPipelineService } from '../../services/run-clustering-pipeline.service';
 
 @Component({
@@ -13,7 +14,10 @@ export class SymbolInputComponent {
   errorMessage: string = '';
   isLoading: boolean = false;
 
-  constructor(private clusteringService: RunClusteringPipelineService) { }
+  constructor(
+    private clusteringService: RunClusteringPipelineService,
+    private router: Router
+  ) { }
 
   onInputChange(value: string) {
     this.newSymbol = value;
@@ -59,6 +63,7 @@ export class SymbolInputComponent {
         next: (response) => {
           console.log('Pipeline completed:', response);
           this.isLoading = false;
+          this.router.navigate(['/analysis'])
         },
         error: (error) => {
           console.error('Error running pipeline:', error);

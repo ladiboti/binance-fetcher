@@ -1,0 +1,15 @@
+<div class="w-full max-w-xl mx-auto p-4 bg-[var(--color-secondary)] rounded-lg shadow-lg">
+    <h2 class="text-[var(--color-highlight)] mb-4 text-lg font-semibold">Available Currencies</h2>
+
+    <div *ngIf="errorMessage" class="text-red-400 mb-4">{{ errorMessage }}</div>
+
+    <div class="flex flex-wrap gap-2">
+        <div 
+          *ngFor="let currency of currencies" 
+          class="bg-[var(--color-surface)] text-[var(--color-highlight)] px-3 py-1 m-1 rounded-lg flex items-center gap-2"
+        >
+          <span>{{ currency.name }} ({{ currency.symbol }})</span>
+          <span class="text-sm text-gray-400">Cluster: {{ currency.clusterId }}</span>
+        </div>
+    </div>
+</div>

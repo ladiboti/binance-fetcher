@@ -2,7 +2,7 @@
 
 CREATE TABLE currencies (
     id SERIAL PRIMARY KEY,
-    symbol VARCHAR(10) UNIQUE NOT NULL,
+    symbol VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(50),
     cluster_id INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
