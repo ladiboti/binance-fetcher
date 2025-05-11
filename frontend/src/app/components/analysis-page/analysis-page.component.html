@@ -6,10 +6,45 @@
     <div class="flex flex-wrap gap-2">
         <div 
           *ngFor="let currency of currencies" 
-          class="bg-[var(--color-surface)] text-[var(--color-highlight)] px-3 py-1 m-1 rounded-lg flex items-center gap-2"
+          class="bg-[var(--color-surface)] text-[var(--color-highlight)] px-3 py-1 m-1 rounded-lg flex items-center gap-2 cursor-pointer"
+          (click)="loadClusterChanges(currency.symbol)"
         >
           <span>{{ currency.name }}</span>
           <span class="text-sm text-gray-400">Total cluster changes: {{ currency.totalClusterChanges }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Cluster Changes -->
+<div *ngIf="selectedSymbol" 
+     class="fixed inset-0 bg-[var(--color-primary)] bg-opacity-70 flex items-center justify-center z-50">
+    <div class="bg-[var(--color-secondary)] p-6 rounded-lg shadow-lg w-full max-w-4xl relative overflow-hidden">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-[var(--color-highlight)] text-2xl font-medium">
+                Cluster changes for {{ selectedSymbol }}
+            </h2>
+            <button (click)="closeClusterChanges()" class="text-[var(--color-highlight)] text-2xl hover:text-[var(--color-accent)]">
+                ✕
+            </button>
+        </div>
+        
+        <div class="overflow-y-auto max-h-[70vh]">
+            <table class="w-full text-left">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-3 text-[var(--color-highlight)] text-lg font-medium">Change timestamp</th>
+                        <th class="px-4 py-3 text-[var(--color-highlight)] text-lg font-medium">From cluster</th>
+                        <th class="px-4 py-3 text-[var(--color-highlight)] text-lg font-medium">To cluster</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let change of clusterChanges" class="border-b border-[var(--color-primary)]">
+                        <td class="px-4 py-4 text-[var(--color-highlight)]">{{ change.changeTimestamp | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+                        <td class="px-4 py-4 text-[var(--color-highlight)]">{{ change.fromClusterId }}</td>
+                        <td class="px-4 py-4 text-[var(--color-highlight)]">{{ change.toClusterId }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
