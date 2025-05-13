@@ -11,11 +11,13 @@ namespace api_backend.Data
 
         public DbSet<Currency> Currencies { get; set; }
         public DbSet<ClusterChange> ClusterChanges { get; set; }
+        public DbSet<CurrencySnapshot> CurrencySnapshots { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Currency>().ToTable("currencies");
             modelBuilder.Entity<ClusterChange>().ToTable("cluster_changes");
+            modelBuilder.Entity<CurrencySnapshot>().ToTable("currency_snapshots");
             
             base.OnModelCreating(modelBuilder);
         }
